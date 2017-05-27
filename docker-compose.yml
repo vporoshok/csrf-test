@@ -14,3 +14,10 @@ services:
        - ./bad:/usr/share/nginx/html
      ports:
        - "4001:80"
+
+  good:
+     image: nginx
+     volumes:
+       - ./good:/usr/share/nginx/html
+     ports:
+       - "4002:80"
