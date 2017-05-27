@@ -7,3 +7,10 @@ services:
        - ./my:/var/www/html
      ports:
        - "4000:80"
+
+  bad:
+     image: nginx
+     volumes:
+       - ./bad:/usr/share/nginx/html
+     ports:
+       - "4001:80"
