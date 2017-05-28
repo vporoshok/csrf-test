@@ -1,6 +1,4 @@
 <?php
-    const SECRET = "SOME SECRET";
-
     session_start();
     $sender = $_SESSION['email'];
     if (strlen($sender) === 0) {
@@ -9,37 +7,46 @@
         exit();
     }
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $token = $_POST['csrf_token'];
-        $tokenSplit = explode(':', $token);
-        if (count($tokenSplit) !== 3 || $tokenSplit[1] !== $sender) {
-            http_response_code(400);
-            echo('Bad CSRF token');
-            exit();
-        }
-        $token = sprintf('%s:%s:', $tokenSplit[0], $tokenSplit[1]);
-        $hash = sha1($token . SECRET);
-        if ($hash !== $tokenSplit[2]) {
-            http_response_code(400);
-            echo('Bad CSRF token');
-            exit();
-        }
-        if (time() - intval($tokenSplit[0]) > 600) {
-            echo('CSRF token expired. Please try again');
-        } else {
-            $message = $_POST['message'];
-            $receiver = $_POST['receiver'];
-            echo("Send $message to $receiver");
-            $message = '';
-            $receiver = '';
-        }
+        $dataRaw = file_get_contents('php://input');
+        $data = json_decode($dataRaw, true);
+        $message = $data['message'];
+        $receiver = $data['receiver'];
+        echo("Send $message to $receiver");
     }
-    $token = sprintf('%d:%s:', time(), $sender);
-    $token .= sha1($token . SECRET);
 ?>
-<p>Hello, <?php echo($sender) ?>!</p>
-<form method="post">
-    <input type="hidden" name="csrf_token" value="<?php echo($token) ?>">
-    <input name="message" placeholder="message" value="<?php echo($message) ?>"><br>
-    <input name="receiver" placeholder="receiver" value="<?php echo($receiver) ?>"><br>
+<p id="state"></p>
+<form name="send">
+    <input name="message" placeholder="message"><br>
+    <input name="receiver" placeholder="receiver"><br>
     <button>Send</button>
 </form>
+<script>
+    var form = document.forms.namedItem('send');
+    var state = document.getElementById('state');
+
+    form.addEventListener('submit', e => {
+        e.preventDefault();
+        var message = form.querySelector('input[name="message"]');
+        var receiver = form.querySelector('input[name="receiver"]');
+
+        var data = {
+            message: message.value,
+            receiver: receiver.value
+        };
+        var req = new XMLHttpRequest();
+
+        req.open('POST', '/form.php');
+        req.setRequestHeader('Content-Type', 'application/json');
+        req.addEventListener('readystatechange', e => {
+            if (req.readyState !== req.DONE) {
+                return;
+            }
+            if (req.status === 200) {
+                state.innerHTML = `Send ${message.value} to ${receiver.value}`;
+                message.value = '';
+                receiver.value = '';
+            }
+        });
+        req.send(JSON.stringify(data));
+    });
+</script>
